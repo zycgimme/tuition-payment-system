@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>学员缴费管理系统</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <section id="authScreen" class="auth-screen">
+    <div class="auth-card">
+      <div class="auth-brand"><span class="brand-mark">缴</span><div><strong>缴费管家</strong><small>手机、电脑实时同步</small></div></div>
+      <div id="configRequired" class="setup-required hidden">
+        <p class="eyebrow">CLOUD SETUP</p>
+        <h1>还差一步连接云数据库</h1>
+        <p>请先按照部署说明填写 Supabase 项目地址和 Publishable Key。系统不会使用或保存 Service Role 密钥。</p>
+      </div>
+      <div id="authForms">
+        <p class="eyebrow">SECURE CLOUD</p>
+        <h1>欢迎回来</h1>
+        <p class="auth-intro">登录后，手机与电脑会看到同一份缴费记录。</p>
+        <div class="auth-tabs"><button class="active" data-auth-tab="login">登录</button><button data-auth-tab="signup">首次注册</button></div>
+        <form id="loginForm" class="auth-form">
+          <label>邮箱<input name="email" type="email" autocomplete="email" required placeholder="name@example.com"></label>
+          <label>密码<input name="password" type="password" autocomplete="current-password" minlength="8" required placeholder="至少 8 位"></label>
+          <button class="primary" type="submit" data-testid="login-submit">安全登录</button>
+        </form>
+        <form id="signupForm" class="auth-form hidden">
+          <label>邮箱<input name="email" type="email" autocomplete="email" required placeholder="用于登录和找回账号"></label>
+          <label>密码<input name="password" type="password" autocomplete="new-password" minlength="8" required placeholder="至少 8 位"></label>
+          <button class="primary" type="submit" data-testid="signup-submit">创建云端账号</button>
+          <small>注册后可能需要前往邮箱完成验证。</small>
+        </form>
+        <p id="authMessage" class="auth-message"></p>
+      </div>
+    </div>
+  </section>
+
+  <div id="loadingScreen" class="loading-screen hidden"><span class="spinner"></span><strong>正在同步云端数据…</strong></div>
+
+  <div id="appShell" class="app-shell hidden">
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark">缴</span>
+        <div><strong>缴费管家</strong><small>学员缴费管理系统</small></div>
+      </div>
+      <nav id="nav">
+        <button class="nav-item active" data-view="dashboard"><span>⌂</span>总览</button>
+        <button class="nav-item" data-view="students"><span>◎</span>学员档案</button>
+        <button class="nav-item" data-view="payments"><span>¥</span>缴费记录</button>
+        <button class="nav-item" data-view="review"><span>!</span>待核对 <b id="reviewBadge">0</b></button>
+      </nav>
+      <div class="sidebar-foot">
+        <small id="accountEmail">云端账号</small>
+        <span id="syncStatus" class="sync-status">● 已同步</span>
+        <button class="ghost-light" id="importDataBtn">首次导入 Excel 数据</button>
+        <button class="ghost-light" id="exportBackupBtn">导出备份</button>
+        <button class="ghost-light danger-light" id="logoutBtn">退出登录</button>
+      </div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">PAYMENT RECORDS</p>
+          <h1 id="pageTitle">缴费总览</h1>
+        </div>
+        <div class="top-actions">
+          <label class="global-search">
+            <span>⌕</span>
+            <input id="globalSearch" placeholder="搜索学员、学期或备注">
+          </label>
+          <button class="secondary" id="syncNowBtn">↻ 同步</button>
+          <button class="secondary" id="addStudentBtn">＋ 新增学员</button>
+          <button class="primary" id="addPaymentBtn">＋ 记一笔缴费</button>
+        </div>
+      </header>
+
+      <div id="toast" class="toast" aria-live="polite"></div>
+
+      <section id="dashboardView" class="view active">
+        <div class="notice">
+          <div><strong>云端数据已连接</strong><span id="importSummary"></span></div>
+          <button class="text-btn" data-go="review">去处理待核对 →</button>
+        </div>
+        <div class="metric-grid">
+          <article class="metric"><span class="metric-icon blue">人</span><div><small>学员档案</small><strong id="metricStudents">0</strong><em>含英语与数学</em></div></article>
+          <article class="metric"><span class="metric-icon green">¥</span><div><small>可识别缴费总额</small><strong id="metricAmount">¥0</strong><em>仅统计已提取金额</em></div></article>
+          <article class="metric"><span class="metric-icon amber">记</span><div><small>历史记录</small><strong id="metricRecords">0</strong><em>每格原文均已保留</em></div></article>
+          <article class="metric"><span class="metric-icon rose">核</span><div><small>待核对</small><strong id="metricReview">0</strong><em>复杂或非金额记录</em></div></article>
+        </div>
+        <div class="dashboard-grid">
+          <article class="panel">
+            <div class="panel-head"><div><h2>学期收款概览</h2><p>按原表学期归集的可识别金额</p></div></div>
+            <div id="termChart" class="bar-chart"></div>
+          </article>
+          <article class="panel">
+            <div class="panel-head"><div><h2>最近录入</h2><p>新增与导入记录</p></div><button class="text-btn" data-go="payments">查看全部</button></div>
+            <div id="recentPayments" class="recent-list"></div>
+          </article>
+        </div>
+        <article class="panel attention-panel">
+          <div class="panel-head"><div><h2>优先核对</h2><p>系统不确定的原表内容，建议先确认</p></div><button class="secondary compact" data-go="review">打开核对清单</button></div>
+          <div id="priorityReview" class="review-preview"></div>
+        </article>
+      </section>
+
+      <section id="studentsView" class="view">
+        <div class="filterbar">
+          <div class="segmented" id="studentSubjectFilter">
+            <button class="active" data-value="全部">全部</button><button data-value="英语">英语</button><button data-value="数学">数学</button>
+          </div>
+          <span id="studentCountLabel" class="result-count"></span>
+        </div>
+        <article class="panel table-panel">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>学员</th><th>科目</th><th>状态</th><th>缴费笔数</th><th>可识别总额</th><th>待核对</th><th></th></tr></thead>
+              <tbody id="studentTableBody"></tbody>
+            </table>
+          </div>
+          <div id="studentPagination" class="pagination"></div>
+        </article>
+      </section>
+
+      <section id="paymentsView" class="view">
+        <div class="filterbar wrap">
+          <select id="paymentSubjectFilter"><option>全部科目</option><option>英语</option><option>数学</option></select>
+          <select id="paymentTermFilter"><option>全部学期</option></select>
+          <select id="paymentStatusFilter"><option>全部状态</option><option>已确认</option><option>待核对</option></select>
+          <span id="paymentCountLabel" class="result-count"></span>
+          <button class="secondary compact push-right" id="exportCsvBtn">导出当前记录 CSV</button>
+        </div>
+        <article class="panel table-panel">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>学员</th><th>科目</th><th>学期</th><th>金额</th><th>方式</th><th>状态</th><th>原始记录</th><th></th></tr></thead>
+              <tbody id="paymentTableBody"></tbody>
+            </table>
+          </div>
+          <div id="paymentPagination" class="pagination"></div>
+        </article>
+      </section>
+
+      <section id="reviewView" class="view">
+        <div class="review-hero">
+          <div><p class="eyebrow">DATA CHECK</p><h2>把不确定，变成确定</h2><p>原表里的复杂写法全部保留在这里。确认后，它们会从清单中移除。</p></div>
+          <div class="review-score"><strong id="reviewProgress">0%</strong><span>已确认比例</span></div>
+        </div>
+        <div class="filterbar">
+          <select id="reviewKindFilter"><option value="全部">全部类型</option><option value="payment">复杂金额</option><option value="status">状态记录</option><option value="lessons">课时记录</option><option value="note">其他备注</option></select>
+          <span id="reviewCountLabel" class="result-count"></span>
+        </div>
+        <div id="reviewList" class="review-list"></div>
+        <div id="reviewPagination" class="pagination"></div>
+      </section>
+    </main>
+  </div>
+
+  <div id="drawerBackdrop" class="backdrop"></div>
+  <aside id="studentDrawer" class="drawer">
+    <button class="drawer-close" data-close="drawer">×</button>
+    <div id="studentDrawerContent"></div>
+  </aside>
+
+  <div id="modalBackdrop" class="backdrop"></div>
+  <dialog id="formModal">
+    <button class="modal-close" data-close="modal">×</button>
+    <div id="modalContent"></div>
+  </dialog>
+
+  <input id="privateImportFile" type="file" accept=".json,application/json" hidden>
+  <script src="config.js?v=2"></script>
+  <script src="cloud-api.js?v=2"></script>
+  <script src="cloud-app.js?v=2"></script>
+</body>
+</html>
