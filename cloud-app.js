@@ -18,6 +18,254 @@
   const money = (value) => value == null ? "—" : `¥${Number(value).toLocaleString("zh-CN")}`;
   const escapeHtml = (value = "") => String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
   const initials = (name) => name.replace(/\s+/g, "").slice(0, 1).toUpperCase() || "学";
+  const PINYIN_GROUPS = {
+    a: "阿啊爱安昂奥",
+    ai: "爱艾",
+    an: "安岸",
+    ao: "奥澳",
+    ba: "巴八爸霸",
+    bai: "白柏百",
+    ban: "班般",
+    bao: "包宝保鲍",
+    bei: "贝蓓北",
+    ben: "本",
+    bi: "毕碧必",
+    bian: "边",
+    biao: "彪",
+    bin: "斌彬滨宾",
+    bing: "冰炳兵",
+    bo: "博波伯柏泊",
+    bu: "卜步",
+    cai: "蔡才彩",
+    can: "灿",
+    cang: "仓",
+    cao: "曹",
+    ce: "策",
+    cen: "岑",
+    ceng: "曾",
+    cha: "查",
+    chang: "常畅昶",
+    chao: "朝超",
+    chen: "陈辰晨宸琛臣忱",
+    cheng: "程成诚承澄丞晟",
+    chi: "池驰炽",
+    chong: "崇",
+    chou: "仇",
+    chu: "楚初储",
+    chuan: "川传",
+    chun: "淳春",
+    ci: "慈",
+    cong: "聪",
+    cui: "崔璀",
+    da: "达",
+    dai: "戴黛",
+    dan: "丹",
+    dang: "党",
+    dao: "道",
+    de: "德",
+    deng: "邓",
+    di: "迪狄",
+    dian: "典",
+    ding: "丁定鼎",
+    dong: "董东冬",
+    dou: "窦",
+    du: "杜都",
+    duan: "段",
+    duo: "多朵",
+    e: "鄂娥",
+    en: "恩",
+    er: "尔",
+    fa: "法",
+    fan: "范樊帆凡",
+    fang: "方芳",
+    fei: "费飞菲",
+    feng: "冯凤锋峰枫丰",
+    fu: "傅付符福甫",
+    gai: "盖",
+    gan: "甘",
+    gao: "高皋镐",
+    ge: "葛戈格歌",
+    geng: "耿",
+    gong: "龚巩",
+    gu: "顾谷古",
+    guan: "关管冠",
+    guang: "广",
+    gui: "桂贵",
+    guo: "郭国果",
+    hai: "海",
+    han: "韩涵含翰瀚晗寒汉",
+    hang: "杭航",
+    hao: "郝浩皓昊豪灏好",
+    he: "何贺赫禾河鹤",
+    heng: "衡恒",
+    hong: "洪弘宏鸿",
+    hou: "侯",
+    hu: "胡湖虎",
+    hua: "华花",
+    huan: "桓欢",
+    huang: "黄凰",
+    hui: "惠慧辉晖",
+    huo: "霍",
+    ji: "纪季吉基济姬骥",
+    jia: "贾嘉佳家珈迦",
+    jian: "简健建剑",
+    jiang: "姜蒋江",
+    jiao: "焦娇",
+    jie: "杰洁捷婕",
+    jin: "金锦瑾晋津槿",
+    jing: "景静靖晶菁璟",
+    jiong: "炯",
+    jiu: "久",
+    ju: "鞠菊",
+    jun: "君俊钧骏峻",
+    kai: "凯楷锴恺开",
+    kang: "康",
+    ke: "柯可珂科克",
+    kong: "孔",
+    kuang: "匡",
+    kui: "奎",
+    lai: "赖莱",
+    lan: "蓝岚兰",
+    lang: "郎",
+    lao: "劳",
+    le: "乐",
+    lei: "雷蕾磊",
+    leng: "冷",
+    li: "李黎厉利立丽莉理礼",
+    lian: "连莲",
+    liang: "梁亮良",
+    liao: "廖",
+    lin: "林琳霖麟临",
+    ling: "凌玲灵柃",
+    liu: "刘柳",
+    long: "龙",
+    lou: "楼娄",
+    lu: "卢陆路璐鲁",
+    luo: "罗洛骆",
+    lv: "吕律",
+    ma: "马玛",
+    mai: "麦",
+    man: "曼",
+    mao: "毛茂",
+    mei: "梅美",
+    meng: "孟梦萌",
+    mi: "米",
+    miao: "苗妙",
+    min: "闵敏",
+    ming: "明铭鸣",
+    mo: "莫墨默",
+    mu: "慕沐牧穆",
+    na: "娜",
+    nan: "南楠",
+    ni: "倪",
+    nian: "念",
+    ning: "宁凝",
+    nuo: "诺",
+    ou: "欧",
+    pan: "潘",
+    pang: "庞",
+    pei: "裴佩",
+    peng: "彭鹏",
+    pi: "皮",
+    pian: "骈",
+    ping: "平萍",
+    po: "朴",
+    qi: "齐祁琪琦淇其栖",
+    qian: "钱倩千谦芊乾",
+    qiang: "强",
+    qiao: "乔巧俏",
+    qin: "秦琴沁钦",
+    qing: "卿晴庆青",
+    qiu: "邱秋",
+    qu: "屈瞿曲",
+    quan: "全权",
+    ran: "冉然",
+    ren: "任仁",
+    ri: "日",
+    rong: "荣蓉",
+    ru: "汝如",
+    ruan: "阮",
+    rui: "瑞睿芮锐",
+    run: "润",
+    sa: "萨",
+    shan: "单珊杉善",
+    shang: "商",
+    shao: "邵绍",
+    shen: "沈申慎",
+    sheng: "盛圣升",
+    shi: "施石史时诗士",
+    shu: "舒书姝",
+    shuang: "爽",
+    shuo: "硕朔",
+    si: "司思斯",
+    song: "宋松",
+    su: "苏素",
+    sun: "孙",
+    tan: "谭檀",
+    tang: "唐汤棠",
+    tao: "陶涛",
+    teng: "滕",
+    tian: "田天恬",
+    ting: "婷庭",
+    tong: "童佟桐彤瞳",
+    tu: "涂屠",
+    wan: "万婉",
+    wang: "王汪",
+    wei: "魏韦伟维玮唯",
+    wen: "文温雯闻",
+    wu: "吴伍武吾",
+    xi: "席希熙兮汐曦溪",
+    xia: "夏霞",
+    xian: "冼贤娴宪",
+    xiang: "向翔湘",
+    xiao: "肖萧小晓孝笑",
+    xie: "谢解燮",
+    xin: "辛欣昕芯馨心鑫",
+    xing: "邢星行杏",
+    xiong: "熊",
+    xiu: "修秀",
+    xu: "徐许旭栩煦",
+    xuan: "轩萱瑄玄炫",
+    xue: "薛雪",
+    xun: "荀迅",
+    ya: "雅亚娅",
+    yan: "严颜闫燕言妍彦焱琰",
+    yang: "杨阳洋漾",
+    yao: "姚瑶尧",
+    ye: "叶",
+    yi: "易伊怡亦奕逸艺一依译翊羿熠祎",
+    yin: "殷尹音寅",
+    ying: "应莹颖英",
+    yong: "雍勇",
+    you: "尤佑宥",
+    yu: "于余俞虞宇羽雨语钰瑜昱煜妤予裕毓",
+    yuan: "袁元源远媛",
+    yue: "岳悦玥月越",
+    yun: "云韵芸",
+    zeng: "曾",
+    zha: "查",
+    zhang: "张章",
+    zhao: "赵昭",
+    zhe: "哲喆",
+    zhen: "郑甄振臻",
+    zheng: "郑正政",
+    zhi: "支智知致芷",
+    zhong: "钟仲",
+    zhou: "周",
+    zhu: "朱祝竹",
+    zhuo: "卓",
+    zi: "子梓孜姿",
+    zou: "邹",
+    zuo: "左"
+  };
+  const PINYIN_MAP = Object.fromEntries(Object.entries(PINYIN_GROUPS).flatMap(([pinyin, chars]) => [...chars].map((char) => [char, pinyin])));
+  const normalizeSearch = (value = "") => String(value).trim().toLowerCase().replace(/\s+/g, "");
+  const pinyinText = (value = "") => [...String(value)].map((char) => /[a-z0-9]/i.test(char) ? char.toLowerCase() : (PINYIN_MAP[char] || char)).join("");
+  const pinyinInitials = (value = "") => [...String(value)].map((char) => {
+    if (/[a-z0-9]/i.test(char)) return char.toLowerCase();
+    return (PINYIN_MAP[char] || char).slice(0, 1);
+  }).join("");
+  const studentSearchText = (student) => normalizeSearch([student.name, student.subject, pinyinText(student.name), pinyinInitials(student.name)].join(" "));
 
   function mapStudent(row) {
     return {
@@ -316,12 +564,20 @@
 
   function openPaymentModal(recordId = null, studentId = null) {
     const record = recordId ? state.records.find((item) => item.id === recordId) : null;
-    const options = state.students.map((student) => `<option value="${student.id}" ${(record?.studentId || studentId) === student.id ? "selected" : ""}>${escapeHtml(student.name)}（${escapeHtml(student.subject)}）</option>`).join("");
+    const selectedStudent = state.students.find((student) => student.id === (record?.studentId || studentId)) || null;
     openModal(`
       <div class="modal-body"><h2>${record ? "编辑缴费记录" : "记一笔缴费"}</h2><p>保存后，其他已登录设备会自动同步。</p>
       <form id="paymentForm" class="form-grid">
         <input type="hidden" name="recordId" value="${record?.id || ""}">
-        <div class="field full"><label>学员 *</label><select name="studentId" required>${options}</select></div>
+        <div class="field full student-picker-field">
+          <label>学员 *</label>
+          <input type="hidden" name="studentId" value="${selectedStudent?.id || ""}">
+          <input id="studentPickerInput" class="student-picker-input" autocomplete="off" required
+            value="${selectedStudent ? `${escapeHtml(selectedStudent.name)}（${escapeHtml(selectedStudent.subject)}）` : ""}"
+            placeholder="输入姓名、拼音或首字母，例如 zhang / zs">
+          <div id="studentPickerResults" class="student-picker-results"></div>
+          <small id="studentPickerHint">可输入中文、完整拼音、首字母；从结果中点选学员。</small>
+        </div>
         <div class="field"><label>学期 *</label><input name="term" required value="${escapeHtml(record?.term || "")}" placeholder="例如：26暑"></div>
         <div class="field"><label>金额（元）</label><input name="amount" type="number" min="0" step="0.01" value="${record?.amount ?? ""}" placeholder="3200"></div>
         <div class="field"><label>缴费日期</label><input name="paymentDate" type="date" value="${escapeHtml(record?.paymentDate || "")}"></div>
@@ -330,6 +586,90 @@
         <div class="field full"><label>备注 / 原始记录</label><textarea name="note">${escapeHtml(record?.note || "")}</textarea></div>
         <div class="modal-actions full"><button type="button" class="secondary" data-close="modal">取消</button><button class="primary" type="submit">保存并同步</button></div>
       </form></div>`);
+    setupStudentPicker(selectedStudent);
+  }
+
+  function setupStudentPicker(selectedStudent = null) {
+    const input = $("#studentPickerInput");
+    const hidden = $('#paymentForm input[name="studentId"]');
+    const results = $("#studentPickerResults");
+    if (!input || !hidden || !results) return;
+    let activeIndex = 0;
+    let selected = selectedStudent;
+    const pick = (student) => {
+      selected = student;
+      hidden.value = student.id;
+      input.value = `${student.name}（${student.subject}）`;
+      results.innerHTML = "";
+      results.classList.remove("open");
+      input.setCustomValidity("");
+    };
+    const rankStudent = (student, query) => {
+      const name = normalizeSearch(student.name);
+      const py = pinyinText(student.name);
+      const pyInitial = pinyinInitials(student.name);
+      const all = studentSearchText(student);
+      if (!query) return 20;
+      if (name === query || py === query || pyInitial === query) return 0;
+      if (name.startsWith(query) || py.startsWith(query) || pyInitial.startsWith(query)) return 1;
+      if (name.includes(query)) return 2;
+      if (py.includes(query)) return 3;
+      if (pyInitial.includes(query)) return 4;
+      return all.includes(query) ? 8 : 99;
+    };
+    const renderResults = () => {
+      const query = normalizeSearch(input.value.replace(/[（）()]/g, ""));
+      if (hidden.value && selected && input.value === `${selected.name}（${selected.subject}）`) return;
+      hidden.value = "";
+      input.setCustomValidity("请从搜索结果中选择一个学员");
+      const rows = state.students
+        .map((student) => ({ student, rank: rankStudent(student, query) }))
+        .filter((item) => item.rank < 99)
+        .sort((a, b) => a.rank - b.rank || a.student.name.localeCompare(b.student.name, "zh-Hans-CN"))
+        .slice(0, 12);
+      activeIndex = 0;
+      results.classList.toggle("open", rows.length > 0);
+      results.innerHTML = rows.map(({ student }, index) => `
+        <button type="button" class="${index === activeIndex ? "active" : ""}" data-pick-student="${student.id}">
+          <span class="avatar">${escapeHtml(initials(student.name))}</span>
+          <span><strong>${escapeHtml(student.name)}</strong><small>${escapeHtml(student.subject)} · ${escapeHtml(pinyinText(student.name))} / ${escapeHtml(pinyinInitials(student.name))}</small></span>
+        </button>`).join("") || `<div class="student-picker-empty">没有匹配的学员</div>`;
+    };
+    input.addEventListener("focus", renderResults);
+    input.addEventListener("input", renderResults);
+    input.addEventListener("keydown", (event) => {
+      const buttons = $$("[data-pick-student]", results);
+      if (!buttons.length) return;
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        activeIndex = event.key === "ArrowDown" ? Math.min(activeIndex + 1, buttons.length - 1) : Math.max(activeIndex - 1, 0);
+        buttons.forEach((button, index) => button.classList.toggle("active", index === activeIndex));
+        buttons[activeIndex].scrollIntoView({ block: "nearest" });
+      }
+      if (event.key === "Enter") {
+        event.preventDefault();
+        const student = state.students.find((item) => item.id === buttons[activeIndex].dataset.pickStudent);
+        if (student) pick(student);
+      }
+      if (event.key === "Escape") {
+        results.innerHTML = "";
+        results.classList.remove("open");
+      }
+    });
+    results.addEventListener("mousedown", (event) => {
+      const button = event.target.closest("[data-pick-student]");
+      if (!button) return;
+      event.preventDefault();
+      const student = state.students.find((item) => item.id === button.dataset.pickStudent);
+      if (student) pick(student);
+    });
+    document.addEventListener("mousedown", function closePicker(event) {
+      if (!$("#formModal").open) return document.removeEventListener("mousedown", closePicker);
+      if (!event.target.closest(".student-picker-field")) {
+        results.innerHTML = "";
+        results.classList.remove("open");
+      }
+    });
   }
 
   function openStudentModal() {
