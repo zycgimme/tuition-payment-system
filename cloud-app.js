@@ -387,6 +387,23 @@
     return state.records.filter((record) => record.studentId === studentId);
   }
 
+  function termRank(term = "") {
+    const text = String(term);
+    const match = text.match(/(\d{2,4})/);
+    const rawYear = match ? Number(match[1]) : 0;
+    const year = rawYear < 100 ? 2000 + rawYear : rawYear;
+    const season = text.includes("寒") ? 4 : text.includes("秋") ? 3 : text.includes("暑") ? 2 : text.includes("春") ? 1 : 0;
+    return year * 10 + season;
+  }
+
+  function recordTimeRank(record) {
+    return Date.parse(record.paymentDate || record.createdAt || "") || 0;
+  }
+
+  function compareRecordsByTermDesc(a, b) {
+    return termRank(b.term) - termRank(a.term) || recordTimeRank(b) - recordTimeRank(a);
+  }
+
   function visibleBySearch(record) {
     if (!searchText) return true;
     const haystack = [record.studentName, record.name, record.subject, record.term, record.note, record.source].join(" ").toLowerCase();
@@ -422,13 +439,7 @@
 
     const termTotals = new Map();
     numeric.forEach((record) => termTotals.set(record.term, (termTotals.get(record.term) || 0) + Number(record.amount)));
-    const rank = (term) => {
-      const match = term.match(/(\d{2})/);
-      const year = match ? Number(match[1]) : 0;
-      const season = term.includes("暑") ? 4 : term.includes("春") ? 3 : term.includes("寒") ? 2 : term.includes("秋") ? 1 : 0;
-      return year * 10 + season;
-    };
-    const topTerms = [...termTotals.entries()].sort((a, b) => rank(b[0]) - rank(a[0])).slice(0, 9);
+    const topTerms = [...termTotals.entries()].sort((a, b) => termRank(b[0]) - termRank(a[0])).slice(0, 9);
     const max = Math.max(...topTerms.map(([, value]) => value), 1);
     $("#termChart").innerHTML = topTerms.map(([term, value]) => `
       <div class="bar-item" title="${escapeHtml(term)}：${money(value)}">
@@ -546,7 +557,7 @@
   function openStudent(studentId) {
     const student = state.students.find((item) => item.id === studentId);
     if (!student) return;
-    const records = recordsFor(studentId);
+    const records = recordsFor(studentId).sort(compareRecordsByTermDesc);
     const total = records.reduce((sum, record) => sum + (Number(record.amount) || 0), 0);
     $("#studentDrawerContent").innerHTML = `
       <div class="student-hero"><span class="avatar">${escapeHtml(initials(student.name))}</span><h2>${escapeHtml(student.name)}</h2><p>${escapeHtml(student.subject)} · ${escapeHtml(student.status)} · ${student.sourceRow ? `来源：原表第 ${student.sourceRow} 行` : "系统新增"}</p></div>
