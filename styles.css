@@ -182,6 +182,15 @@ dialog::backdrop { background: transparent; }
 .field input, .field select, .field textarea { width: 100%; padding: 10px 11px; border: 1px solid #dfe5ed; border-radius: 8px; outline: none; color: var(--ink); background: white; }
 .field input:focus, .field select:focus, .field textarea:focus { border-color: #7ca2f6; box-shadow: 0 0 0 3px #edf3ff; }
 .field textarea { min-height: 74px; resize: vertical; }
+.student-picker-field { position: relative; }
+.student-picker-field small { color: var(--muted); font-size: 10px; line-height: 1.45; }
+.student-picker-results { position: absolute; z-index: 12; top: 73px; left: 0; right: 0; max-height: 286px; display: none; overflow: auto; padding: 6px; border: 1px solid #dbe4ef; border-radius: 10px; background: white; box-shadow: 0 18px 45px rgba(23,34,53,.16); }
+.student-picker-results.open { display: grid; gap: 4px; }
+.student-picker-results button { display: grid; grid-template-columns: 34px 1fr; align-items: center; gap: 9px; width: 100%; padding: 8px; border: 0; border-radius: 8px; background: transparent; color: var(--ink); text-align: left; }
+.student-picker-results button:hover, .student-picker-results button.active { background: var(--blue-soft); }
+.student-picker-results strong, .student-picker-results small { display: block; }
+.student-picker-results small { margin-top: 2px; color: var(--muted); font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.student-picker-empty { padding: 12px; color: var(--muted); font-size: 12px; text-align: center; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 22px; }
 .toast { position: fixed; z-index: 50; top: 20px; left: 50%; transform: translate(-50%, -20px); padding: 10px 16px; border-radius: 8px; background: #172b45; color: white; opacity: 0; pointer-events: none; transition: .2s; font-size: 12px; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
