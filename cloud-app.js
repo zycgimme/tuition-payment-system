@@ -18,6 +18,8 @@
   const money = (value) => value == null ? "—" : `¥${Number(value).toLocaleString("zh-CN")}`;
   const escapeHtml = (value = "") => String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
   const initials = (name) => name.replace(/\s+/g, "").slice(0, 1).toUpperCase() || "学";
+  const isActiveRecord = (record) => record.status !== "已作废";
+  const statusClass = (status) => status === "已确认" ? "confirmed" : status === "已作废" ? "voided" : "review";
   const PINYIN_GROUPS = {
     a: "阿啊爱安昂奥",
     ai: "爱艾",
@@ -428,7 +430,7 @@
   }
 
   function renderDashboard() {
-    const numeric = state.records.filter((record) => record.amount != null);
+    const numeric = state.records.filter((record) => isActiveRecord(record) && record.amount != null);
     const total = numeric.reduce((sum, record) => sum + Number(record.amount), 0);
     const review = state.records.filter((record) => record.status === "待核对");
     $("#importSummary").textContent = `${state.students.length} 位学员、${state.records.length} 条记录；手机和电脑使用同一云端数据。`;
@@ -465,7 +467,7 @@
     const pageRows = students.slice((studentPage - 1) * PAGE_SIZE, studentPage * PAGE_SIZE);
     $("#studentCountLabel").textContent = `共 ${students.length} 位学员`;
     $("#studentTableBody").innerHTML = pageRows.map((student) => {
-      const records = recordsFor(student.id);
+      const records = recordsFor(student.id).filter(isActiveRecord);
       const total = records.reduce((sum, record) => sum + (Number(record.amount) || 0), 0);
       const review = records.filter((record) => record.status === "待核对").length;
       return `<tr>
@@ -511,9 +513,9 @@
         <td><div class="person"><span class="avatar">${escapeHtml(initials(record.studentName))}</span><strong>${escapeHtml(record.studentName)}</strong></div></td>
         <td><span class="tag ${record.subject === "英语" ? "english" : ""}">${escapeHtml(record.subject)}</span></td>
         <td>${escapeHtml(record.term)}</td><td class="money">${money(record.amount)}</td><td>${escapeHtml(record.method)}</td>
-        <td><span class="tag ${record.status === "已确认" ? "confirmed" : "review"}">${escapeHtml(record.status)}</span></td>
+        <td><span class="tag ${statusClass(record.status)}">${escapeHtml(record.status)}</span></td>
         <td class="raw-cell" title="${escapeHtml(record.note)}">${escapeHtml(record.note)}</td>
-        <td><button class="row-action" data-edit-record="${record.id}">编辑</button></td></tr>`).join("") || `<tr><td colspan="8" class="empty">没有匹配的缴费记录</td></tr>`;
+        <td class="record-actions"><button class="row-action" data-edit-record="${record.id}">编辑</button><button class="row-action ${record.status === "已作废" ? "restore-action" : "void-action"}" data-${record.status === "已作废" ? "restore" : "void"}-record="${record.id}">${record.status === "已作废" ? "恢复" : "作废"}</button></td></tr>`).join("") || `<tr><td colspan="8" class="empty">没有匹配的缴费记录</td></tr>`;
     renderPagination("#paymentPagination", paymentPage, totalPages, (page) => { paymentPage = page; renderPayments(); });
   }
 
@@ -522,8 +524,9 @@
     const records = state.records.filter((record) => record.status === "待核对" && (kind === "全部" || record.kind === kind) && visibleBySearch(record));
     const totalPages = Math.max(1, Math.ceil(records.length / 12));
     reviewPage = Math.min(reviewPage, totalPages);
-    const confirmed = state.records.filter((record) => record.status === "已确认").length;
-    $("#reviewProgress").textContent = `${Math.round(confirmed / Math.max(state.records.length, 1) * 100)}%`;
+    const active = state.records.filter(isActiveRecord);
+    const confirmed = active.filter((record) => record.status === "已确认").length;
+    $("#reviewProgress").textContent = `${Math.round(confirmed / Math.max(active.length, 1) * 100)}%`;
     $("#reviewCountLabel").textContent = `剩余 ${records.length} 条`;
     $("#reviewList").innerHTML = records.slice((reviewPage - 1) * 12, reviewPage * 12).map((record) => `
       <article class="review-card">
@@ -558,12 +561,12 @@
     const student = state.students.find((item) => item.id === studentId);
     if (!student) return;
     const records = recordsFor(studentId).sort(compareRecordsByTermDesc);
-    const total = records.reduce((sum, record) => sum + (Number(record.amount) || 0), 0);
+    const total = records.filter(isActiveRecord).reduce((sum, record) => sum + (Number(record.amount) || 0), 0);
     $("#studentDrawerContent").innerHTML = `
       <div class="student-hero"><span class="avatar">${escapeHtml(initials(student.name))}</span><h2>${escapeHtml(student.name)}</h2><p>${escapeHtml(student.subject)} · ${escapeHtml(student.status)} · ${student.sourceRow ? `来源：原表第 ${student.sourceRow} 行` : "系统新增"}</p></div>
       <div class="student-summary"><div><small>记录数</small><strong>${records.length}</strong></div><div><small>可识别总额</small><strong>${money(total)}</strong></div><div><small>待核对</small><strong>${records.filter((r) => r.status === "待核对").length}</strong></div></div>
       <div class="panel-head" style="padding-left:0"><div><h2>缴费时间线</h2><p>原始记录与新增记录</p></div><button class="primary compact" data-add-for="${student.id}">＋ 记缴费</button></div>
-      <div class="timeline">${records.map((record) => `<div class="timeline-item"><div class="timeline-head"><strong>${escapeHtml(record.term)}</strong><span class="money">${money(record.amount)}</span></div><p>${escapeHtml(record.note)}</p><small class="tag ${record.status === "已确认" ? "confirmed" : "review"}">${escapeHtml(record.status)} · ${escapeHtml(record.source)}</small></div>`).join("") || '<div class="empty">还没有缴费记录</div>'}</div>`;
+      <div class="timeline">${records.map((record) => `<div class="timeline-item ${record.status === "已作废" ? "voided-record" : ""}"><div class="timeline-head"><strong>${escapeHtml(record.term)}</strong><span class="money">${money(record.amount)}</span></div><p>${escapeHtml(record.note)}</p><small class="tag ${statusClass(record.status)}">${escapeHtml(record.status)} · ${escapeHtml(record.source)}</small></div>`).join("") || '<div class="empty">还没有缴费记录</div>'}</div>`;
     $("#drawerBackdrop").classList.add("show");
     $("#studentDrawer").classList.add("open");
   }
@@ -593,7 +596,7 @@
         <div class="field"><label>金额（元）</label><input name="amount" type="number" min="0" step="0.01" value="${record?.amount ?? ""}" placeholder="3200"></div>
         <div class="field"><label>缴费日期</label><input name="paymentDate" type="date" value="${escapeHtml(record?.paymentDate || "")}"></div>
         <div class="field"><label>收款方式</label><select name="method">${["未记录","微信","支付宝","现金","银行转账","原表代码"].map((value) => `<option ${record?.method === value ? "selected" : ""}>${value}</option>`).join("")}</select></div>
-        <div class="field"><label>核对状态</label><select name="status"><option ${record?.status === "已确认" ? "selected" : ""}>已确认</option><option ${record?.status !== "已确认" ? "selected" : ""}>待核对</option></select></div>
+        <div class="field"><label>核对状态</label><select name="status"><option ${record?.status === "已确认" ? "selected" : ""}>已确认</option><option ${!record || record.status === "待核对" ? "selected" : ""}>待核对</option>${record?.status === "已作废" ? '<option selected>已作废</option>' : ''}</select></div>
         <div class="field full"><label>备注 / 原始记录</label><textarea name="note">${escapeHtml(record?.note || "")}</textarea></div>
         <div class="modal-actions full"><button type="button" class="secondary" data-close="modal">取消</button><button class="primary" type="submit">保存并同步</button></div>
       </form></div>`);
@@ -783,6 +786,16 @@
     }
   }
 
+  async function setRecordVoided(id, voided) {
+    try {
+      await api.updatePayment(id, { status: voided ? "已作废" : "待核对" });
+      await syncNow(false);
+      showToast(voided ? "记录已作废，不再计入总额" : "记录已恢复，请重新核对");
+    } catch (error) {
+      showToast(error.message);
+    }
+  }
+
   async function importPrivateData(file) {
     openImportProgress();
     try {
@@ -836,6 +849,10 @@
     const go = event.target.closest("[data-go]"); if (go) navigate(go.dataset.go);
     const student = event.target.closest("[data-student]"); if (student) openStudent(student.dataset.student);
     const edit = event.target.closest("[data-edit-record]"); if (edit) openPaymentModal(edit.dataset.editRecord);
+    const voidButton = event.target.closest("[data-void-record]");
+    if (voidButton && window.confirm("确定作废这条缴费记录吗？作废后不计入总额，并且可以恢复。")) await setRecordVoided(voidButton.dataset.voidRecord, true);
+    const restoreButton = event.target.closest("[data-restore-record]");
+    if (restoreButton) await setRecordVoided(restoreButton.dataset.restoreRecord, false);
     const confirm = event.target.closest("[data-confirm]"); if (confirm) await confirmRecord(confirm.dataset.confirm);
     const addFor = event.target.closest("[data-add-for]"); if (addFor) openPaymentModal(null, addFor.dataset.addFor);
     const close = event.target.closest("[data-close]"); if (close?.dataset.close === "modal") closeModal(); else if (close) closeDrawer();
