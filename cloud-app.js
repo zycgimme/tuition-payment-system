@@ -394,7 +394,8 @@
     const match = text.match(/(\d{2,4})/);
     const rawYear = match ? Number(match[1]) : 0;
     const year = rawYear < 100 ? 2000 + rawYear : rawYear;
-    const season = text.includes("寒") ? 4 : text.includes("秋") ? 3 : text.includes("暑") ? 2 : text.includes("春") ? 1 : 0;
+    // 寒假属于新年份开头：25秋 → 26寒 → 26春 → 26暑 → 26秋。
+    const season = text.includes("秋") ? 3 : text.includes("暑") ? 2 : text.includes("春") ? 1 : 0;
     return year * 10 + season;
   }
 
