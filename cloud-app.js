@@ -800,9 +800,11 @@
   async function deleteStudent(studentId) {
     const student = state.students.find((item) => item.id === studentId);
     if (!student) return;
-    const recordCount = recordsFor(studentId).length;
-    if (recordCount) return showToast(`该学员有 ${recordCount} 条缴费记录，不能删除`);
-    if (!window.confirm(`确定删除学员“${student.name}”吗？此操作无法撤销。`)) return;
+    const studentRecords = recordsFor(studentId);
+    const activeCount = studentRecords.filter(isActiveRecord).length;
+    const voidedCount = studentRecords.length - activeCount;
+    if (activeCount) return showToast(`该学员还有 ${activeCount} 条有效缴费记录，不能删除`);
+    if (!window.confirm(`确定删除学员“${student.name}”吗？${voidedCount ? `同时会永久删除 ${voidedCount} 条已作废记录。` : ""}此操作无法撤销。`)) return;
     try {
       await api.deleteStudent(studentId);
       closeDrawer();
