@@ -160,6 +160,14 @@
       return rows[0];
     }
 
+    async deleteStudent(id) {
+      await this.rest("students", {
+        method: "DELETE",
+        query: `id=eq.${encodeURIComponent(id)}`,
+        prefer: "return=minimal",
+      });
+    }
+
     async insertPayment(record) {
       const rows = await this.rest("payment_records", {
         method: "POST",

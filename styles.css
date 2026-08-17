@@ -141,6 +141,8 @@ tbody tr:hover { background: #fbfcff; }
 .void-action { color: var(--rose); }
 .restore-action { color: var(--green); }
 .voided-record { opacity: .58; }
+.drawer-actions { display: flex; gap: 8px; align-items: center; }
+.danger-action { color: var(--rose); border-color: var(--rose-soft); }
 .pagination { min-height: 49px; display: flex; align-items: center; justify-content: center; gap: 6px; border-top: 1px solid var(--line); }
 .pagination button { min-width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 7px; background: white; color: var(--muted); }
 .pagination button.active { background: var(--blue); color: white; border-color: var(--blue); }

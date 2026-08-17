@@ -566,7 +566,7 @@
     $("#studentDrawerContent").innerHTML = `
       <div class="student-hero"><span class="avatar">${escapeHtml(initials(student.name))}</span><h2>${escapeHtml(student.name)}</h2><p>${escapeHtml(student.subject)} · ${escapeHtml(student.status)} · ${student.sourceRow ? `来源：原表第 ${student.sourceRow} 行` : "系统新增"}</p></div>
       <div class="student-summary"><div><small>记录数</small><strong>${records.length}</strong></div><div><small>可识别总额</small><strong>${money(total)}</strong></div><div><small>待核对</small><strong>${records.filter((r) => r.status === "待核对").length}</strong></div></div>
-      <div class="panel-head" style="padding-left:0"><div><h2>缴费时间线</h2><p>原始记录与新增记录</p></div><button class="primary compact" data-add-for="${student.id}">＋ 记缴费</button></div>
+      <div class="panel-head" style="padding-left:0"><div><h2>缴费时间线</h2><p>原始记录与新增记录</p></div><div class="drawer-actions"><button class="secondary compact danger-action" data-delete-student="${student.id}">删除学员</button><button class="primary compact" data-add-for="${student.id}">＋ 记缴费</button></div></div>
       <div class="timeline">${records.map((record) => `<div class="timeline-item ${record.status === "已作废" ? "voided-record" : ""}"><div class="timeline-head"><strong>${escapeHtml(record.term)}</strong><span class="money">${money(record.amount)}</span></div><p>${escapeHtml(record.note)}</p><small class="tag ${statusClass(record.status)}">${escapeHtml(record.status)} · ${escapeHtml(record.source)}</small></div>`).join("") || '<div class="empty">还没有缴费记录</div>'}</div>`;
     $("#drawerBackdrop").classList.add("show");
     $("#studentDrawer").classList.add("open");
@@ -797,6 +797,22 @@
     }
   }
 
+  async function deleteStudent(studentId) {
+    const student = state.students.find((item) => item.id === studentId);
+    if (!student) return;
+    const recordCount = recordsFor(studentId).length;
+    if (recordCount) return showToast(`该学员有 ${recordCount} 条缴费记录，不能删除`);
+    if (!window.confirm(`确定删除学员“${student.name}”吗？此操作无法撤销。`)) return;
+    try {
+      await api.deleteStudent(studentId);
+      closeDrawer();
+      await syncNow(false);
+      showToast("学员已删除并同步");
+    } catch (error) {
+      showToast(error.message);
+    }
+  }
+
   async function importPrivateData(file) {
     openImportProgress();
     try {
@@ -856,6 +872,7 @@
     if (restoreButton) await setRecordVoided(restoreButton.dataset.restoreRecord, false);
     const confirm = event.target.closest("[data-confirm]"); if (confirm) await confirmRecord(confirm.dataset.confirm);
     const addFor = event.target.closest("[data-add-for]"); if (addFor) openPaymentModal(null, addFor.dataset.addFor);
+    const deleteStudentButton = event.target.closest("[data-delete-student]"); if (deleteStudentButton) await deleteStudent(deleteStudentButton.dataset.deleteStudent);
     const close = event.target.closest("[data-close]"); if (close?.dataset.close === "modal") closeModal(); else if (close) closeDrawer();
   });
 
