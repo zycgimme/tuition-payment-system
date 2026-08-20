@@ -450,7 +450,7 @@
         <div class="bar" style="height:${Math.max(8, Math.round(value / max * 185))}px"></div>
         <div class="bar-label">${escapeHtml(term)}</div>
       </div>`).join("") || `<div class="empty">导入数据后显示学期收款统计</div>`;
-    $("#recentPayments").innerHTML = [...state.records].reverse().slice(0, 6).map((record) => `
+    $("#recentPayments").innerHTML = state.records.filter(isActiveRecord).reverse().slice(0, 6).map((record) => `
       <div class="recent-item"><span class="avatar">${escapeHtml(initials(record.studentName))}</span>
         <div><strong>${escapeHtml(record.studentName)}</strong><small>${escapeHtml(record.term)} · ${escapeHtml(record.method)}</small></div>
         <span class="money">${money(record.amount)}</span></div>`).join("") || `<div class="empty">暂时没有缴费记录</div>`;
@@ -494,7 +494,7 @@
     return state.records.filter((record) =>
       (filters.subject === "全部科目" || record.subject === filters.subject) &&
       (filters.term === "全部学期" || record.term === filters.term) &&
-      (filters.status === "全部状态" || record.status === filters.status) &&
+      (filters.status === "全部状态" ? isActiveRecord(record) : record.status === filters.status) &&
       visibleBySearch(record)
     );
   }
@@ -561,7 +561,7 @@
   function openStudent(studentId) {
     const student = state.students.find((item) => item.id === studentId);
     if (!student) return;
-    const records = recordsFor(studentId).sort(compareRecordsByTermDesc);
+    const records = recordsFor(studentId).filter(isActiveRecord).sort(compareRecordsByTermDesc);
     const total = records.filter(isActiveRecord).reduce((sum, record) => sum + (Number(record.amount) || 0), 0);
     $("#studentDrawerContent").innerHTML = `
       <div class="student-hero"><span class="avatar">${escapeHtml(initials(student.name))}</span><h2>${escapeHtml(student.name)}</h2><p>${escapeHtml(student.subject)} · ${escapeHtml(student.status)} · ${student.sourceRow ? `来源：原表第 ${student.sourceRow} 行` : "系统新增"}</p></div>
