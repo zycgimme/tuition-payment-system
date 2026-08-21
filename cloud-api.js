@@ -168,6 +168,16 @@
       });
     }
 
+    async updateStudent(id, patch) {
+      const rows = await this.rest("students", {
+        method: "PATCH",
+        query: `id=eq.${encodeURIComponent(id)}`,
+        prefer: "return=representation",
+        body: patch,
+      });
+      return rows[0];
+    }
+
     async insertPayment(record) {
       const rows = await this.rest("payment_records", {
         method: "POST",

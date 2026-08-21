@@ -143,6 +143,11 @@ tbody tr:hover { background: #fbfcff; }
 .voided-record { opacity: .58; }
 .drawer-actions { display: flex; gap: 8px; align-items: center; }
 .danger-action { color: var(--rose); border-color: var(--rose-soft); }
+.student-status-editor { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; margin: 14px 0; padding: 12px; border-radius: 12px; background: #f7f9fc; }
+.student-status-editor label { grid-column: 1 / -1; font-size: 11px; color: var(--muted); }
+.student-paused { background: #f3f4f6; color: #8a94a3; }
+.student-paused .avatar, .student-paused .tag { filter: grayscale(1); opacity: .65; }
+.student-paused .row-action { color: #7f8997; }
 .pagination { min-height: 49px; display: flex; align-items: center; justify-content: center; gap: 6px; border-top: 1px solid var(--line); }
 .pagination button { min-width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 7px; background: white; color: var(--muted); }
 .pagination button.active { background: var(--blue); color: white; border-color: var(--blue); }

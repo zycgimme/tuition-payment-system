@@ -471,7 +471,7 @@
       const records = recordsFor(student.id).filter(isActiveRecord);
       const total = records.reduce((sum, record) => sum + (Number(record.amount) || 0), 0);
       const review = records.filter((record) => record.status === "待核对").length;
-      return `<tr>
+      return `<tr class="${student.status === "停课" ? "student-paused" : ""}">
         <td><div class="person"><span class="avatar">${escapeHtml(initials(student.name))}</span><div><strong>${escapeHtml(student.name)}</strong><small>${student.duplicateName ? "同名记录 · " : ""}${student.sourceRow ? `原表第 ${student.sourceRow} 行` : "系统新增"}</small></div></div></td>
         <td><span class="tag ${student.subject === "英语" ? "english" : ""}">${escapeHtml(student.subject)}</span></td>
         <td><span class="tag">${escapeHtml(student.status)}</span></td><td>${records.length}</td><td class="money">${money(total)}</td>
@@ -565,6 +565,7 @@
     const total = records.filter(isActiveRecord).reduce((sum, record) => sum + (Number(record.amount) || 0), 0);
     $("#studentDrawerContent").innerHTML = `
       <div class="student-hero"><span class="avatar">${escapeHtml(initials(student.name))}</span><h2>${escapeHtml(student.name)}</h2><p>${escapeHtml(student.subject)} · ${escapeHtml(student.status)} · ${student.sourceRow ? `来源：原表第 ${student.sourceRow} 行` : "系统新增"}</p></div>
+      <div class="student-status-editor"><label>学员状态</label><select data-student-status="${student.id}">${["在读","停课","待确认","结课"].map((status) => `<option ${student.status === status ? "selected" : ""}>${status}</option>`).join("")}</select><button class="secondary compact" data-save-student-status="${student.id}">保存状态</button></div>
       <div class="student-summary"><div><small>记录数</small><strong>${records.length}</strong></div><div><small>可识别总额</small><strong>${money(total)}</strong></div><div><small>待核对</small><strong>${records.filter((r) => r.status === "待核对").length}</strong></div></div>
       <div class="panel-head" style="padding-left:0"><div><h2>缴费时间线</h2><p>原始记录与新增记录</p></div><div class="drawer-actions"><button class="secondary compact danger-action" data-delete-student="${student.id}">删除学员</button><button class="primary compact" data-add-for="${student.id}">＋ 记缴费</button></div></div>
       <div class="timeline">${records.map((record) => `<div class="timeline-item ${record.status === "已作废" ? "voided-record" : ""}"><div class="timeline-head"><strong>${escapeHtml(record.term)}</strong><span class="money">${money(record.amount)}</span></div><p>${escapeHtml(record.note)}</p><small class="tag ${statusClass(record.status)}">${escapeHtml(record.status)} · ${escapeHtml(record.source)}</small></div>`).join("") || '<div class="empty">还没有缴费记录</div>'}</div>`;
@@ -692,7 +693,7 @@
       <form id="studentForm" class="form-grid">
         <div class="field full"><label>学员姓名 *</label><input name="name" required autofocus></div>
         <div class="field"><label>科目 *</label><select name="subject"><option>英语</option><option>数学</option><option>其他</option></select></div>
-        <div class="field"><label>状态</label><select name="status"><option>在读</option><option>待确认</option><option>暂停</option><option>结课</option></select></div>
+        <div class="field"><label>状态</label><select name="status"><option>在读</option><option>停课</option><option>待确认</option><option>结课</option></select></div>
         <div class="field"><label>家长姓名</label><input name="guardian"></div><div class="field"><label>联系电话</label><input name="phone"></div>
         <div class="field full"><label>备注</label><textarea name="note"></textarea></div>
         <div class="modal-actions full"><button type="button" class="secondary" data-close="modal">取消</button><button class="primary" type="submit">保存并同步</button></div>
@@ -815,6 +816,19 @@
     }
   }
 
+  async function saveStudentStatus(studentId) {
+    const select = $(`[data-student-status="${studentId}"]`);
+    if (!select) return;
+    try {
+      await api.updateStudent(studentId, { status: select.value });
+      closeDrawer();
+      await syncNow(false);
+      showToast("学员状态已更新并同步");
+    } catch (error) {
+      showToast(error.message);
+    }
+  }
+
   async function importPrivateData(file) {
     openImportProgress();
     try {
@@ -875,6 +889,7 @@
     const confirm = event.target.closest("[data-confirm]"); if (confirm) await confirmRecord(confirm.dataset.confirm);
     const addFor = event.target.closest("[data-add-for]"); if (addFor) openPaymentModal(null, addFor.dataset.addFor);
     const deleteStudentButton = event.target.closest("[data-delete-student]"); if (deleteStudentButton) await deleteStudent(deleteStudentButton.dataset.deleteStudent);
+    const saveStudentStatusButton = event.target.closest("[data-save-student-status]"); if (saveStudentStatusButton) await saveStudentStatus(saveStudentStatusButton.dataset.saveStudentStatus);
     const close = event.target.closest("[data-close]"); if (close?.dataset.close === "modal") closeModal(); else if (close) closeDrawer();
   });
 
